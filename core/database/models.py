@@ -26,3 +26,4 @@ class Stock(Base):
   qty = Column(Integer)
 
   product = relationship("Product", backref="stocks")
+  
