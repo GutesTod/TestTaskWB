@@ -71,7 +71,7 @@ async def sub_articul(callback: types.CallbackQuery, state: FSMContext, session:
     for tmp_stock in data['resp_data']['stocks']:
         stock_on = Stock(
             articul=data['resp_data']['articul'],
-            wh_id=tmp_stock['wh']
+            wh_id=tmp_stock['wh'],
             qty=tmp_stock['qty']
         )
         session.add(stock_on)

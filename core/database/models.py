@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from core.database import Base
 from sqlalchemy.orm import relationship
 
@@ -6,6 +6,7 @@ class User(Base):
   __tablename__ = "users"
 
   id = Column(Integer, primary_key=True)
+  notifications = Column(Boolean)
 
 
 class Product(Base):
