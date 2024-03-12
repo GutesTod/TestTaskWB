@@ -1,1 +1,2 @@
 from .client_keyboards import menu_keyboard_factory
+from .inline_client_keyboards import sub_keyboard_factory

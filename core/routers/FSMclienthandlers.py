@@ -2,9 +2,13 @@ from aiohttp import ClientSession
 from aiogram import F, types, Router
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
+from core.keyboards import sub_keyboard_factory
+from sqlalchemy.orm import Session
+from database import get_db, User, Product, Stock
 
 class ImportIDState(StatesGroup):
     articul = State()
+    resp_data = State()
     
 fsm_client_router = Router()
 
@@ -39,13 +43,37 @@ async def get_info_about_product(msg: types.Message, state: FSMContext):
                     "qty": tmp_stocks['qty']
                 })
         responce_data.append({
+            "articul": data['articul'],
             "name": tmp_data["name"],
             "stocks": stocks
         })
-    print(responce_data)
+    await state.update_data(resp_data=responce_data)
+    await state.set_state(ImportIDState.resp_data)
     for tmp_data in responce_data:
         printer = f'Название товара - {tmp_data['name']}\n\n'
         for stock in tmp_data['stocks']:
             printer += f"ID Склада - {stock['wh']} : Количество - {stock['qty']}\n"
         
-    await msg.answer(text=printer)
+    await msg.answer(text=printer, reply_markup=(await sub_keyboard_factory()).as_markup())
+    
+@fsm_client_router.callback_query(
+    ImportIDState.resp_data,
+    F.data == "sub-articul"
+)
+async def sub_articul(callback: types.CallbackQuery, state: FSMContext, session: Session = get_db):
+    data = await state.get_data()
+    product_on = Product(
+        articul=data['resp_data']['articul'],
+        user_id=await callback.from_user.id,
+        name_product=data['resp_data']['name']
+    )
+    session.add(product_on)
+    for tmp_stock in data['resp_data']['stocks']:
+        stock_on = Stock(
+            articul=data['resp_data']['articul'],
+            wh_id=tmp_stock['wh']
+            qty=tmp_stock['qty']
+        )
+        session.add(stock_on)
+    await callback.message.answer("Вы подписались на уввведомления об этом товаре!")
+    
