@@ -27,6 +27,7 @@ async def main_telegram():
         fsm_client_router,
         client_router
     )
+    
     dp.update.middleware(DataBaseSession(session_pool=AsyncSessionMaker))
     await dp.start_polling(bot)
 if __name__ == '__main__':

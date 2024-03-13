@@ -12,6 +12,11 @@ async def add_product(session: AsyncSession, tmp_id: int, data: dict):
     session.add(obj)
     await session.commit()
     
+async def get_all_products(session: AsyncSession):
+    query = select(Product)
+    result = await session.execute(query)
+    return result.scalars().all()
+    
 async def get_products_by_user_id(session: AsyncSession, tmp_id: int):
     query = select(Product).where(Product.user_id == tmp_id)
     result = await session.execute(query)
