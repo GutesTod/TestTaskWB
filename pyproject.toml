@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "testtaskwb"
-version = "0.5.1"
+version = "0.9.0"
 description = ""
 authors = ["GutesTod <jefflol003@gmail.com>"]
 
@@ -12,6 +12,7 @@ python-dotenv = "^1.0.1"
 apscheduler = "^3.10.4"
 sqlalchemy-utils = "^0.41.1"
 psycopg = {extras = ["binary"], version = "^3.1.18"}
+psycopg2-binary = "^2.9.9"
 
 
 [build-system]

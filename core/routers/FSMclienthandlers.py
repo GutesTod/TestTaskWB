@@ -3,9 +3,9 @@ from aiogram import F, types, Router
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from core.keyboards import sub_keyboard_factory
-from sqlalchemy.orm import Session
-from core.database import get_db
-from core.database.models import Product, Stock
+from sqlalchemy.ext.asyncio import AsyncSession
+from core.database.orm_query_product import add_product
+from core.database.orm_query_stocks import add_stock
 
 class ImportIDState(StatesGroup):
     articul = State()
@@ -61,21 +61,10 @@ async def get_info_about_product(msg: types.Message, state: FSMContext):
     ImportIDState.resp_data,
     F.data == "sub-articul"
 )
-async def sub_articul(callback: types.CallbackQuery, state: FSMContext, session: Session = get_db()):
+async def sub_articul(callback: types.CallbackQuery, state: FSMContext, session: AsyncSession):
     data = await state.get_data()
     for tmp_data in data['resp_data']:
-        product_on = Product(
-            articul=tmp_data['articul'],
-            user_id=callback.from_user.id,
-            name_product=tmp_data['name']
-        )
-        session.add(product_on)
+        await add_product(session, callback.from_user.id, tmp_data)
         for tmp_stock in tmp_data['stocks']:
-            stock_on = Stock(
-                articul=tmp_data['articul'],
-                wh_id=tmp_stock['wh'],
-                qty=tmp_stock['qty']
-            )
-            session.add(stock_on)
-        await callback.message.answer("Вы подписались на уввведомления об этом товаре!")
-    session.close()
+            await add_stock(session, tmp_stock, tmp_data['articul'])
+    callback.message.answer(text="Вы подписались!")

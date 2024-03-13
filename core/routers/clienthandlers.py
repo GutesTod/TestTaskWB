@@ -1,57 +1,42 @@
 from aiogram import Router, types, F
-from core.database import get_db
-from core.database.models import User, Product, Stock
 from core.keyboards import menu_keyboard_factory
-from sqlalchemy.orm import Session
-from sqlalchemy import select
+from core.database.orm_query_user import add_user, get_user, switch_mode_notification
+from core.database.orm_query_joins import get_articuls_of_user
+from sqlalchemy.ext.asyncio import AsyncSession
 
 client_router = Router()
 
 @client_router.message(
     F.text == '/start'
 )
-async def start_bot(msg: types.Message, session: Session = get_db()):
+async def start_bot(msg: types.Message, session: AsyncSession):
     menu_keyboard = (await menu_keyboard_factory(bool_not=True)).as_markup()
-    if not (session.query(User).get(msg.from_user.id)):
-        user_on = User(
-            id = msg.from_user.id,
-            notifications = True
-        )
-    session.add(user_on)
+    if not (await get_user(session, msg.from_user.id)):
+        await add_user(session, msg.from_user.id)
+        await msg.answer(text="Новый!")
     await msg.answer(text="Привет!", reply_markup=menu_keyboard)
-    session.close()
     
 @client_router.message(
     F.text == 'Остановить уведомления'
 )
-async def stop_notifications(msg: types.Message, session: Session = get_db()):
-    session.query(User).filter(User.id == msg.from_user.id).update({'notifications': False})
+async def stop_notifications(msg: types.Message, session: AsyncSession):
+    switch_mode_notification(session, False, msg.from_user.id)
     await msg.answer(text="Уведомления остановлены", reply_markup=(await menu_keyboard_factory(bool_not=False)).as_markup())
-    session.close()
 
 @client_router.message(
     F.text == 'Включить уведомления'
 )
-async def on_notifications(msg: types.Message, session: Session = get_db()):
-    session.query(User).filter(User.id == msg.from_user.id).update({'notifications': True})
+async def on_notifications(msg: types.Message, session: AsyncSession):
+    switch_mode_notification(session, True, msg.from_user.id)
     await msg.answer(text="Уведомления включены", reply_markup=(await menu_keyboard_factory(bool_not=True)).as_markup())
-    session.close()
     
 @client_router.message(
     F.text == "Получить информацию из БД"
 )
-async def get_info_from_db(msg: types.Message, session: Session = get_db()):
-    tmp_data = session.execute(
-        select(Product.articul)
-        .where(Product.user_id == msg.from_user.id)
-    )
-    resp_data = {}
-    for articul in tmp_data:
-        resp_data[f'{articul}'].append(
-            session.query(Stock)
-            .filter(Stock.articul == articul)
-            .limit(5)
-            .all()
-        )
-    print(resp_data)
-    session.close()
+async def get_info_from_db(msg: types.Message, session: AsyncSession):
+    resp_data = await get_articuls_of_user(session=session, tmp_id=msg.from_user.id)
+    for tmp_data in resp_data:
+        printer = f'Артикул товара - {tmp_data[0].articul}\n\n'
+        for stock in tmp_data:
+            printer += f"ID Склада - {stock.wh_id} : Количество - {stock.qty}\n"
+        await msg.answer(text=printer)

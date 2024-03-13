@@ -1,6 +1,23 @@
+import os
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
-from core.database import Base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, DeclarativeBase
+from sqlalchemy.ext.asyncio import AsyncAttrs, create_async_engine, async_sessionmaker, AsyncSession
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+engine = create_async_engine(
+  os.getenv("DATABASE_URL")
+)
+
+engine.connect()
+
+AsyncSessionMaker = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+
+class Base(AsyncAttrs, DeclarativeBase):
+  pass
 
 class User(Base):
   __tablename__ = "users"
@@ -21,9 +38,18 @@ class Product(Base):
 class Stock(Base):
   __tablename__ = "stocks"
 
-  articul = Column(Integer, ForeignKey("products.articul"), primary_key=True)
+  id = Column(Integer, autoincrement=True, primary_key=True)
+  articul = Column(Integer, ForeignKey("products.articul"))
   wh_id = Column(Integer)
   qty = Column(Integer)
 
   product = relationship("Product", backref="stocks")
+  
+async def async_init_db():
+  async with engine.begin() as conn:
+    await conn.run_sync(Base.metadata.create_all)
+    
+async def async_drop_db():
+  async with engine.begin() as conn:
+    await conn.run_sync(Base.metadata.drop_all) 
   

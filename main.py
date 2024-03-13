@@ -1,11 +1,12 @@
 import os
+import sys
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv
 from core.routers import fsm_client_router, client_router
-from sqlalchemy_utils import database_exists, create_database
-from core.database import engine, Base
+from core.database import async_init_db, AsyncSessionMaker, async_drop_db
+from core.middleware.db import DataBaseSession
 
 
 load_dotenv()
@@ -16,9 +17,8 @@ dp = Dispatcher()
 
 
 async def main_telegram():
-    if not database_exists(engine.url):
-        create_database(engine.url)
-    print(database_exists(engine.url))
+    await async_drop_db()
+    await async_init_db()
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
@@ -27,6 +27,11 @@ async def main_telegram():
         fsm_client_router,
         client_router
     )
+    dp.update.middleware(DataBaseSession(session_pool=AsyncSessionMaker))
     await dp.start_polling(bot)
 if __name__ == '__main__':
+    
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+    
     asyncio.run(main_telegram())
