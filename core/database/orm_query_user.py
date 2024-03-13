@@ -23,7 +23,7 @@ async def get_user(session: AsyncSession, tmp_id: int):
 
 async def switch_mode_notification(session: AsyncSession, notification_tmp: bool, tmp_id: int):
     query = update(User).where(User.id == tmp_id).values(
-        notification = notification_tmp
+        notifications = notification_tmp
     )
     await session.execute(query)
     await session.commit()

@@ -17,17 +17,17 @@ async def start_bot(msg: types.Message, session: AsyncSession):
     await msg.answer(text="Привет!", reply_markup=menu_keyboard)
     
 @client_router.message(
-    F.text == 'Остановить уведомления'
+    F.text == 'Отключить уведомления'
 )
 async def stop_notifications(msg: types.Message, session: AsyncSession):
-    switch_mode_notification(session, False, msg.from_user.id)
+    await switch_mode_notification(session, False, msg.from_user.id)
     await msg.answer(text="Уведомления остановлены", reply_markup=(await menu_keyboard_factory(bool_not=False)).as_markup())
 
 @client_router.message(
     F.text == 'Включить уведомления'
 )
 async def on_notifications(msg: types.Message, session: AsyncSession):
-    switch_mode_notification(session, True, msg.from_user.id)
+    await switch_mode_notification(session, True, msg.from_user.id)
     await msg.answer(text="Уведомления включены", reply_markup=(await menu_keyboard_factory(bool_not=True)).as_markup())
     
 @client_router.message(

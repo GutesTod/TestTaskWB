@@ -1,1 +1,1 @@
-from .core import schedule_jobs
+from .core import send_products_to_users
